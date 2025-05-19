@@ -6,6 +6,10 @@ import (
 	"github.com/oleshko-g/gatorcli/internal/config"
 )
 
+type state struct {
+	cfg *config.Config
+}
+
 func main() {
 	cfg, _ := config.Read()
 	cfg.SetUser("gena")
