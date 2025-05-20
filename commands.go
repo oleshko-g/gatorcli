@@ -18,12 +18,19 @@ func loginHandler(s *state, cmd command) error {
 	if err != nil {
 		return err
 	}
-
+	fmt.Printf("Current user has been set to %s\n", s.cfg.CurrentUser)
 	return nil
 }
 
 type commands struct {
 	commandHandlers map[string]commandHandler
+}
+
+func NewCommands() commands {
+
+	return commands{
+		commandHandlers: make(map[string]commandHandler),
+	}
 }
 
 func (c commands) run(s *state, cmd command) error {
@@ -40,5 +47,6 @@ func (c commands) run(s *state, cmd command) error {
 }
 
 func (c commands) register(name string, f commandHandler) error {
+	c.commandHandlers[name] = f
 	return nil
 }
