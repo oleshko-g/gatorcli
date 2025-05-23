@@ -1,14 +1,18 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"os"
 
+	_ "github.com/lib/pq"
 	"github.com/oleshko-g/gatorcli/internal/config"
+	"github.com/oleshko-g/gatorcli/internal/database"
 )
 
 type state struct {
 	cfg *config.Config
+	db  *database.Queries
 }
 
 func setState() state {
@@ -33,8 +37,27 @@ func parseArgs() command {
 	}
 }
 
+func openPostgresDB(dbURL string) (*sql.DB, error) {
+	db, err := sql.Open("postgres", dbURL)
+	if err != nil {
+		return nil, err
+	}
+	err = db.Ping()
+	if err != nil {
+		return nil, err
+	}
+	return db, nil
+}
+
 func main() {
 	state := setState()
+	db, errDB := openPostgresDB(state.cfg.DataBaseURL)
+	if errDB != nil {
+		fmt.Fprintln(os.Stderr, errDB)
+		os.Exit(1)
+	}
+
+	state.db = database.New(db)
 	cmds := NewCommands()
 	cmds.register("login", loginHandler)
 	cmd := parseArgs()
