@@ -19,16 +19,16 @@ func setState() state {
 	var s state
 	cfg, err := config.Read()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, fmt.Sprintf("error reading config"))
+		fmt.Fprintf(os.Stderr, "error reading config")
 		os.Exit(1)
 	}
 	s.cfg = &cfg
 	return s
 }
 
-func parseArgs() command {
+func parseOSArgs() command {
 	if len(os.Args) < 2 {
-		fmt.Fprintf(os.Stderr, fmt.Sprintf("error not enough arguments were provided."))
+		fmt.Fprintf(os.Stderr, "error not enough arguments were provided.")
 		os.Exit(1)
 	}
 	return command{
@@ -56,11 +56,13 @@ func main() {
 		fmt.Fprintln(os.Stderr, errDB)
 		os.Exit(1)
 	}
-
 	state.db = database.New(db)
+
 	cmds := NewCommands()
 	cmds.register("login", loginHandler)
-	cmd := parseArgs()
+	cmds.register("register", registerHandler)
+
+	cmd := parseOSArgs()
 	err := cmds.run(&state, cmd)
 	if err != nil {
 		fmt.Fprintln(os.Stderr, err)
