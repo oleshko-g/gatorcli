@@ -129,10 +129,14 @@ type commands struct {
 }
 
 func NewCommands() commands {
+	cmds := commands{commandHandlers: make(map[string]commandHandler)}
 
-	return commands{
-		commandHandlers: make(map[string]commandHandler),
-	}
+	cmds.register("login", loginHandler)
+	cmds.register("register", registerHandler)
+	cmds.register("reset", resetUsersHandler)
+	cmds.register("users", getUsersHandler)
+
+	return cmds
 }
 
 func (c commands) run(s *state, cmd command) error {

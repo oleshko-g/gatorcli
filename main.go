@@ -59,10 +59,6 @@ func main() {
 	state.db = database.New(db)
 
 	cmds := NewCommands()
-	cmds.register("login", loginHandler)
-	cmds.register("register", registerHandler)
-	cmds.register("reset", resetUsersHandler)
-	cmds.register("users", getUsersHandler)
 
 	cmd := parseOSArgs()
 	err := cmds.run(&state, cmd)
