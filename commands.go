@@ -22,6 +22,18 @@ func loginHandler(s *state, cmd command) error {
 		return fmt.Errorf("error login handler expects a single argument, the username")
 	}
 	newUserName := cmd.args[0]
+	ctx := context.Background()
+
+	existingUser, errGetUserByName := s.db.GetUserByName(ctx, newUserName)
+
+	userExists := existingUser != database.User{} &&
+		errGetUserByName != sql.ErrNoRows
+	if !userExists {
+		return fmt.Errorf("error user doesn't exist")
+	} else if errGetUserByName != nil {
+		return errGetUserByName // error trying to check if user exists
+	}
+
 	err := s.cfg.SetUser(newUserName)
 	if err != nil {
 		return err
@@ -70,6 +82,21 @@ func registerHandler(s *state, cmd command) error {
 
 	return errGetUserByName // error trying to check if user exists
 
+}
+
+func resetUsersHandler(s *state, cmd command) error {
+	argumentsNum := len(cmd.args)
+	if argumentsNum > 0 {
+		return fmt.Errorf("error reset handler expects no argument. Number of arguments %d", argumentsNum)
+	}
+	ctx := context.Background()
+
+	errReset := s.db.ResetUsers(ctx)
+	if errReset != nil {
+		return errReset
+	}
+	fmt.Println("Users Table have been reset successfuly")
+	return nil
 }
 
 type commands struct {

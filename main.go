@@ -61,6 +61,7 @@ func main() {
 	cmds := NewCommands()
 	cmds.register("login", loginHandler)
 	cmds.register("register", registerHandler)
+	cmds.register("reset", resetUsersHandler)
 
 	cmd := parseOSArgs()
 	err := cmds.run(&state, cmd)
