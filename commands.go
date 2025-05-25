@@ -99,6 +99,31 @@ func resetUsersHandler(s *state, cmd command) error {
 	return nil
 }
 
+func getUsersHandler(s *state, cmd command) error {
+	argumentsNum := len(cmd.args)
+	if argumentsNum > 0 {
+		return fmt.Errorf("error handler expects no argument. Number of arguments %d", argumentsNum)
+	}
+
+	ctx := context.Background()
+
+	users, errGetUsers := s.db.GetUsers(ctx)
+	if errGetUsers != nil {
+		return errGetUsers
+	}
+
+	for _, user := range users {
+		current := ""
+		if user.Name == s.cfg.CurrentUser {
+			current = " (current)"
+		}
+
+		fmt.Printf("* %s%s\n", user.Name, current)
+	}
+
+	return nil
+}
+
 type commands struct {
 	commandHandlers map[string]commandHandler
 }
