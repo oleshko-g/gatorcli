@@ -10,6 +10,8 @@ import (
 	"github.com/oleshko-g/gatorcli/internal/database"
 )
 
+const defaultRSSURL = "https://www.wagslane.dev/index.xml"
+
 type command struct {
 	name string
 	args []string
@@ -124,6 +126,26 @@ func getUsersHandler(s *state, cmd command) error {
 	return nil
 }
 
+func aggHandler(s *state, cmd command) error {
+	rssURL := defaultRSSURL
+
+	argumentsNum := len(cmd.args)
+	if argumentsNum == 1 {
+		rssURL = cmd.args[0]
+	}
+
+	ctx := context.Background()
+
+	rss, errFetchFeed := fetchFeed(ctx, rssURL)
+	if errFetchFeed != nil {
+		return errFetchFeed
+	}
+
+	fmt.Printf("%#v", *rss)
+
+	return nil
+}
+
 type commands struct {
 	commandHandlers map[string]commandHandler
 }
@@ -135,6 +157,7 @@ func NewCommands() commands {
 	cmds.register("register", registerHandler)
 	cmds.register("reset", resetUsersHandler)
 	cmds.register("users", getUsersHandler)
+	cmds.register("agg", aggHandler)
 
 	return cmds
 }
