@@ -3,22 +3,34 @@ package main
 import (
 	"context"
 	"encoding/xml"
+	"html"
 	"net/http"
 )
 
-type RSSFeed = struct {
+type RSSFeed struct {
 	Channel struct {
-		Title       string  `xml:"title"`
-		Link        string  `xml:"link"`
-		Description string  `xml:"description"`
-		Item        RSSItem `xml:"item"`
+		Title       string    `xml:"title"`
+		Link        string    `xml:"link"`
+		Description string    `xml:"description"`
+		Item        []RSSItem `xml:"item"`
 	} `xml:"channel"`
 }
 
 type RSSItem struct {
-	Title   string `xml:"title"`
-	Link    string `xml:"link"`
-	PubDate string `xml:"pubDate"`
+	Title       string `xml:"title"`
+	Link        string `xml:"link"`
+	Description string `xml:"description"`
+	PubDate     string `xml:"pubDate"`
+}
+
+func (r *RSSFeed) unescape() {
+	r.Channel.Title = html.UnescapeString(r.Channel.Title)
+	r.Channel.Description = html.UnescapeString(r.Channel.Description)
+
+	for i, v := range r.Channel.Item {
+		r.Channel.Item[i].Title = html.UnescapeString(v.Title)
+		r.Channel.Item[i].Description = html.UnescapeString(v.Description)
+	}
 }
 
 func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
@@ -42,6 +54,8 @@ func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 	if errDecode != nil {
 		return nil, errDecode
 	}
+
+	feed.unescape()
 
 	return &feed, nil
 }
