@@ -146,6 +146,41 @@ func aggHandler(s *state, cmd command) error {
 	return nil
 }
 
+func addfeedHandler(s *state, cmd command) error {
+	argumentsNum := len(cmd.args)
+	if argumentsNum != 2 {
+		return fmt.Errorf("error addfeed handler expects 2 arguments. Number of arguments %d", argumentsNum)
+	}
+
+	ctx := context.Background()
+	currentDBUser, errGetUserByName := s.db.GetUserByName(ctx, s.cfg.CurrentUser)
+	if errGetUserByName != nil {
+		return errGetUserByName
+	}
+
+	feedName := cmd.args[0]
+	feedURL := cmd.args[1]
+	createdFeed, errCreateFeed := s.db.CreateFeed(ctx,
+		database.CreateFeedParams{
+			ID:        uuid.New(),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			Name:      feedName,
+			Url:       feedURL,
+			UserID: uuid.NullUUID{
+				UUID:  currentDBUser.ID,
+				Valid: true,
+			},
+		})
+	if errCreateFeed != nil {
+		return errCreateFeed
+	}
+
+	fmt.Printf("%#v", createdFeed)
+
+	return nil
+}
+
 type commands struct {
 	commandHandlers map[string]commandHandler
 }
@@ -158,6 +193,7 @@ func NewCommands() commands {
 	cmds.register("reset", resetUsersHandler)
 	cmds.register("users", getUsersHandler)
 	cmds.register("agg", aggHandler)
+	cmds.register("addfeed", addfeedHandler)
 
 	return cmds
 }
