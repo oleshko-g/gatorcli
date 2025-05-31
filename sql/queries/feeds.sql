@@ -11,3 +11,10 @@ INSERT INTO
 VALUES ($1, $2, $3, $4, $5, $6)
 RETURNING
     *;
+
+-- name: GetFeedsUsers :many
+SELECT
+    sqlc.embed(feeds),
+    sqlc.embed(users)
+FROM feeds
+    JOIN users ON feeds.user_id = users.id;

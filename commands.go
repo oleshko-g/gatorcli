@@ -176,7 +176,36 @@ func addfeedHandler(s *state, cmd command) error {
 		return errCreateFeed
 	}
 
-	fmt.Printf("%#v", createdFeed)
+	fmt.Printf("%+v", createdFeed)
+
+	return nil
+}
+
+func printFeeds(f []database.GetFeedsUsersRow) {
+	if len(f) == 0 {
+		return
+	}
+	for _, v := range f {
+		fmt.Printf("Feed Name: %s. Feed URL: %s. User Name: %s\n",
+			v.Feed.Name,
+			v.Feed.Url,
+			v.User.Name,
+		)
+	}
+}
+
+func feedsHandler(s *state, cmd command) error {
+	argumentsNum := len(cmd.args)
+	if argumentsNum != 0 {
+		return fmt.Errorf("error 'feeds' handler expects 0 arguments. Number of arguments %d", argumentsNum)
+	}
+	ctx := context.Background()
+
+	feeds, errGetFeedsUsers := s.db.GetFeedsUsers(ctx)
+	if errGetFeedsUsers != nil {
+		return errGetFeedsUsers
+	}
+	printFeeds(feeds)
 
 	return nil
 }
@@ -194,6 +223,7 @@ func NewCommands() commands {
 	cmds.register("users", getUsersHandler)
 	cmds.register("agg", aggHandler)
 	cmds.register("addfeed", addfeedHandler)
+	cmds.register("feeds", feedsHandler)
 
 	return cmds
 }
