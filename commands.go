@@ -153,7 +153,7 @@ func addfeedHandler(s *state, cmd command) error {
 	}
 
 	ctx := context.Background()
-	currentDBUser, errGetUserByName := s.db.GetUserByName(ctx, s.cfg.CurrentUser)
+	currentUserData, errGetUserByName := s.db.GetUserByName(ctx, s.cfg.CurrentUser)
 	if errGetUserByName != nil {
 		return errGetUserByName
 	}
@@ -168,10 +168,25 @@ func addfeedHandler(s *state, cmd command) error {
 			Name:      feedName,
 			Url:       feedURL,
 			UserID: uuid.NullUUID{
-				UUID:  currentDBUser.ID,
+				UUID:  currentUserData.ID,
 				Valid: true,
 			},
 		})
+
+	followRecord, errCreateFeedFollow := s.db.CreateFeedFollow(ctx,
+		database.CreateFeedFollowParams{
+			ID:        uuid.New(),
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			UserID:    currentUserData.ID,
+			FeedID:    createdFeed.ID,
+		})
+	if errCreateFeedFollow != nil {
+		return errCreateFeedFollow
+	}
+
+	printCreatedFeedFollow(followRecord)
+
 	if errCreateFeed != nil {
 		return errCreateFeed
 	}
