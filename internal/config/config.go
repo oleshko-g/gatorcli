@@ -25,7 +25,7 @@ func (cfg Config) write() error {
 	return nil
 }
 
-func (cfg Config) SetUser(user string) error {
+func (cfg *Config) SetUser(user string) error {
 	cfg.CurrentUser = user
 	return cfg.write()
 }

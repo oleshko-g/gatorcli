@@ -46,7 +46,7 @@ func loginHandler(s *state, cmd command) error {
 
 func registerHandler(s *state, cmd command) error {
 	if len(cmd.args) != 1 {
-		return fmt.Errorf("error login handler expects a single argument, the username")
+		return fmt.Errorf("error register handler expects a single argument, the username")
 	}
 
 	newUserName := cmd.args[0]
