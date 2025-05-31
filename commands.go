@@ -249,6 +249,30 @@ func followHandler(s *state, cmd command) error {
 	return nil
 }
 
+func followingHandler(s *state, cmd command) error {
+	argumentsNum := len(cmd.args)
+	if argumentsNum != 0 {
+		return fmt.Errorf("error 'feeds' handler expects 0 arguments. Number of arguments %d", argumentsNum)
+	}
+
+	ctx := context.Background()
+
+	currentUserData, errGetUserByName := s.db.GetUserByName(ctx, s.cfg.CurrentUser)
+	if errGetUserByName != nil {
+		return errGetUserByName
+	}
+
+	feedFollows, errGetFeedFollowUser := s.db.GetFeedFollowUser(ctx, currentUserData.ID)
+	if errGetFeedFollowUser != nil {
+		return errGetFeedFollowUser
+	}
+	for _, feedFollow := range feedFollows {
+		fmt.Printf("User Name: %s. Feed Name: %s\n", feedFollow.User.Name, feedFollow.Feed.Name)
+	}
+
+	return nil
+}
+
 type commands struct {
 	commandHandlers map[string]commandHandler
 }
@@ -264,6 +288,7 @@ func NewCommands() commands {
 	cmds.register("addfeed", addfeedHandler)
 	cmds.register("feeds", feedsHandler)
 	cmds.register("follow", followHandler)
+	cmds.register("following", followingHandler)
 
 	return cmds
 }

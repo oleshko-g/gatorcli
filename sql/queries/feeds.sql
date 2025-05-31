@@ -42,3 +42,11 @@ FROM
 
 -- name: GetFeedByURL :one
 SELECT * FROM feeds WHERE url = $1;
+
+-- name: GetFeedFollowUser :many
+SELECT sqlc.embed(feed_follows), sqlc.embed(users), sqlc.embed(feeds) 
+FROM users
+    JOIN feed_follows ON users.id = feed_follows.user_id
+    JOIN feeds on feed_follows.feed_id = feeds.id
+WHERE
+    users.id = $1;

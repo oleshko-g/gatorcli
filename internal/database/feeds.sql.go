@@ -143,6 +143,60 @@ func (q *Queries) GetFeedByURL(ctx context.Context, url string) (Feed, error) {
 	return i, err
 }
 
+const getFeedFollowUser = `-- name: GetFeedFollowUser :many
+SELECT feed_follows.id, feed_follows.created_at, feed_follows.updated_at, feed_follows.feed_id, feed_follows.user_id, users.id, users.created_at, users.updated_at, users.name, feeds.id, feeds.created_at, feeds.updated_at, feeds.name, feeds.url, feeds.user_id 
+FROM users
+    JOIN feed_follows ON users.id = feed_follows.user_id
+    JOIN feeds on feed_follows.feed_id = feeds.id
+WHERE
+    users.id = $1
+`
+
+type GetFeedFollowUserRow struct {
+	FeedFollow FeedFollow
+	User       User
+	Feed       Feed
+}
+
+func (q *Queries) GetFeedFollowUser(ctx context.Context, id uuid.UUID) ([]GetFeedFollowUserRow, error) {
+	rows, err := q.db.QueryContext(ctx, getFeedFollowUser, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var items []GetFeedFollowUserRow
+	for rows.Next() {
+		var i GetFeedFollowUserRow
+		if err := rows.Scan(
+			&i.FeedFollow.ID,
+			&i.FeedFollow.CreatedAt,
+			&i.FeedFollow.UpdatedAt,
+			&i.FeedFollow.FeedID,
+			&i.FeedFollow.UserID,
+			&i.User.ID,
+			&i.User.CreatedAt,
+			&i.User.UpdatedAt,
+			&i.User.Name,
+			&i.Feed.ID,
+			&i.Feed.CreatedAt,
+			&i.Feed.UpdatedAt,
+			&i.Feed.Name,
+			&i.Feed.Url,
+			&i.Feed.UserID,
+		); err != nil {
+			return nil, err
+		}
+		items = append(items, i)
+	}
+	if err := rows.Close(); err != nil {
+		return nil, err
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return items, nil
+}
+
 const getFeedsUsers = `-- name: GetFeedsUsers :many
 SELECT
     feeds.id, feeds.created_at, feeds.updated_at, feeds.name, feeds.url, feeds.user_id,
