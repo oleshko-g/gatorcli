@@ -7,7 +7,6 @@ package database
 
 import (
 	"context"
-	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
@@ -67,30 +66,34 @@ WITH
                 created_at,
                 updated_at,
                 user_id,
-                feed_url
+                feed_id
             )
         VALUES ($1, $2, $3, $4, $5)
+        RETURNING id, created_at, updated_at, feed_id, user_id
     )
-SELECT feed_follows.id, feed_follows.created_at, feed_follows.updated_at, feed_follows.feed_url, feed_follows.user_id, users.id, users.created_at, users.updated_at, users.name, feeds.id, feeds.created_at, feeds.updated_at, feeds.name, feeds.url, feeds.user_id
+SELECT cte_inserted_feed_follow.id, cte_inserted_feed_follow.created_at, cte_inserted_feed_follow.updated_at, cte_inserted_feed_follow.feed_id, cte_inserted_feed_follow.user_id, users.id, users.created_at, users.updated_at, users.name, feeds.id, feeds.created_at, feeds.updated_at, feeds.name, feeds.url, feeds.user_id
 FROM
-    feed_follows
-    JOIN users ON feed_follows.user_id = users.id
-    JOIN feeds ON feed_follows.feed_url = feeds.url
-    WHERE feeds.id = $1
+    cte_inserted_feed_follow
+    JOIN users ON cte_inserted_feed_follow.user_id = users.id
+    JOIN feeds ON cte_inserted_feed_follow.feed_id = feeds.id
 `
 
 type CreateFeedFollowParams struct {
 	ID        uuid.UUID
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	UserID    uuid.NullUUID
-	FeedUrl   sql.NullString
+	UserID    uuid.UUID
+	FeedID    uuid.UUID
 }
 
 type CreateFeedFollowRow struct {
-	FeedFollow FeedFollow
-	User       User
-	Feed       Feed
+	ID        uuid.UUID
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	FeedID    uuid.UUID
+	UserID    uuid.UUID
+	User      User
+	Feed      Feed
 }
 
 func (q *Queries) CreateFeedFollow(ctx context.Context, arg CreateFeedFollowParams) (CreateFeedFollowRow, error) {
@@ -99,15 +102,15 @@ func (q *Queries) CreateFeedFollow(ctx context.Context, arg CreateFeedFollowPara
 		arg.CreatedAt,
 		arg.UpdatedAt,
 		arg.UserID,
-		arg.FeedUrl,
+		arg.FeedID,
 	)
 	var i CreateFeedFollowRow
 	err := row.Scan(
-		&i.FeedFollow.ID,
-		&i.FeedFollow.CreatedAt,
-		&i.FeedFollow.UpdatedAt,
-		&i.FeedFollow.FeedUrl,
-		&i.FeedFollow.UserID,
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.FeedID,
+		&i.UserID,
 		&i.User.ID,
 		&i.User.CreatedAt,
 		&i.User.UpdatedAt,

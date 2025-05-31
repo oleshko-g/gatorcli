@@ -28,16 +28,16 @@ WITH
                 created_at,
                 updated_at,
                 user_id,
-                feed_url
+                feed_id
             )
         VALUES ($1, $2, $3, $4, $5)
+        RETURNING *
     )
-SELECT sqlc.embed(feed_follows), sqlc.embed(users), sqlc.embed(feeds)
+SELECT cte_inserted_feed_follow.*, sqlc.embed(users), sqlc.embed(feeds)
 FROM
-    feed_follows
-    JOIN users ON feed_follows.user_id = users.id
-    JOIN feeds ON feed_follows.feed_url = feeds.url
-    WHERE feeds.id = $1;
+    cte_inserted_feed_follow
+    JOIN users ON cte_inserted_feed_follow.user_id = users.id
+    JOIN feeds ON cte_inserted_feed_follow.feed_id = feeds.id;
 
 
 -- name: GetFeedByURL :one
