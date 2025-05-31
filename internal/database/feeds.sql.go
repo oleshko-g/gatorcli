@@ -7,6 +7,7 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"time"
 
 	"github.com/google/uuid"
@@ -45,6 +46,88 @@ func (q *Queries) CreateFeed(ctx context.Context, arg CreateFeedParams) (Feed, e
 		arg.Url,
 		arg.UserID,
 	)
+	var i Feed
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Name,
+		&i.Url,
+		&i.UserID,
+	)
+	return i, err
+}
+
+const createFeedFollow = `-- name: CreateFeedFollow :one
+WITH
+    cte_inserted_feed_follow AS (
+        INSERT INTO
+            feed_follows (
+                id,
+                created_at,
+                updated_at,
+                user_id,
+                feed_url
+            )
+        VALUES ($1, $2, $3, $4, $5)
+    )
+SELECT feed_follows.id, feed_follows.created_at, feed_follows.updated_at, feed_follows.feed_url, feed_follows.user_id, users.id, users.created_at, users.updated_at, users.name, feeds.id, feeds.created_at, feeds.updated_at, feeds.name, feeds.url, feeds.user_id
+FROM
+    feed_follows
+    JOIN users ON feed_follows.user_id = users.id
+    JOIN feeds ON feed_follows.feed_url = feeds.url
+    WHERE feeds.id = $1
+`
+
+type CreateFeedFollowParams struct {
+	ID        uuid.UUID
+	CreatedAt time.Time
+	UpdatedAt time.Time
+	UserID    uuid.NullUUID
+	FeedUrl   sql.NullString
+}
+
+type CreateFeedFollowRow struct {
+	FeedFollow FeedFollow
+	User       User
+	Feed       Feed
+}
+
+func (q *Queries) CreateFeedFollow(ctx context.Context, arg CreateFeedFollowParams) (CreateFeedFollowRow, error) {
+	row := q.db.QueryRowContext(ctx, createFeedFollow,
+		arg.ID,
+		arg.CreatedAt,
+		arg.UpdatedAt,
+		arg.UserID,
+		arg.FeedUrl,
+	)
+	var i CreateFeedFollowRow
+	err := row.Scan(
+		&i.FeedFollow.ID,
+		&i.FeedFollow.CreatedAt,
+		&i.FeedFollow.UpdatedAt,
+		&i.FeedFollow.FeedUrl,
+		&i.FeedFollow.UserID,
+		&i.User.ID,
+		&i.User.CreatedAt,
+		&i.User.UpdatedAt,
+		&i.User.Name,
+		&i.Feed.ID,
+		&i.Feed.CreatedAt,
+		&i.Feed.UpdatedAt,
+		&i.Feed.Name,
+		&i.Feed.Url,
+		&i.Feed.UserID,
+	)
+	return i, err
+}
+
+const getFeedByURL = `-- name: GetFeedByURL :one
+SELECT id, created_at, updated_at, name, url, user_id FROM feeds WHERE url = $1
+`
+
+func (q *Queries) GetFeedByURL(ctx context.Context, url string) (Feed, error) {
+	row := q.db.QueryRowContext(ctx, getFeedByURL, url)
 	var i Feed
 	err := row.Scan(
 		&i.ID,
