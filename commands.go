@@ -255,6 +255,32 @@ func followHandler(s *state, cmd command, u database.User) error {
 	return nil
 }
 
+func unfollowHandler(s *state, cmd command, u database.User) error {
+	argumentsNum := len(cmd.args)
+	if argumentsNum != 1 {
+		return fmt.Errorf("error 'unfollow' handler expects 1 argument. Number of input arguments %d", argumentsNum)
+	}
+	ctx := context.Background()
+
+	feedURL := cmd.args[0]
+	feedData, errGetFeedByURL := s.db.GetFeedByURL(ctx, feedURL)
+	if errGetFeedByURL != nil {
+		return errGetFeedByURL
+	}
+
+	_, errDel := s.db.DeleteFeedFollowUser(ctx,
+		database.DeleteFeedFollowUserParams{
+			UserID: u.ID,
+			FeedID: feedData.ID,
+		})
+	if errDel != nil {
+		return errDel
+	}
+
+	fmt.Printf("'%s' feed has been unfollowed", feedData.Name)
+
+	return nil
+}
 func followingHandler(s *state, cmd command, u database.User) error {
 	argumentsNum := len(cmd.args)
 	if argumentsNum != 0 {
@@ -289,6 +315,7 @@ func NewCommands() commands {
 	cmds.register("addfeed", middleWareLoggedIn(addfeedHandler))
 	cmds.register("feeds", feedsHandler)
 	cmds.register("follow", middleWareLoggedIn(followHandler))
+	cmds.register("unfollow", middleWareLoggedIn(unfollowHandler))
 	cmds.register("following", middleWareLoggedIn(followingHandler))
 
 	return cmds

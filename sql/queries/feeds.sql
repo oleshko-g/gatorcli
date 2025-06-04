@@ -50,3 +50,6 @@ FROM users
     JOIN feeds on feed_follows.feed_id = feeds.id
 WHERE
     users.id = $1;
+
+-- name: DeleteFeedFollowUser :one
+DELETE FROM feed_follows WHERE user_id = $1 and feed_id = $2 RETURNING *;
