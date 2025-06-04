@@ -53,3 +53,9 @@ WHERE
 
 -- name: DeleteFeedFollowUser :one
 DELETE FROM feed_follows WHERE user_id = $1 and feed_id = $2 RETURNING *;
+
+-- name: GetNextFeedToFetch :one
+SELECT *
+FROM feeds
+ORDER BY last_fetch_at DESC NULLS FIRST, updated_at
+LIMIT 1;
