@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/xml"
+	"fmt"
 	"html"
 	"net/http"
 )
@@ -58,4 +59,28 @@ func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 	feed.unescape()
 
 	return &feed, nil
+}
+
+func scrapeFeeds(s *state) error {
+	ctx := context.Background()
+	feedToFetch, errGetNextFeedToFeth := s.db.GetNextFeedToFetch(ctx)
+	if errGetNextFeedToFeth != nil {
+		return errGetNextFeedToFeth
+	}
+
+	feed, errFetchFeed := fetchFeed(ctx, feedToFetch.Url)
+	if errFetchFeed != nil {
+		return errFetchFeed
+	}
+
+	errMarkFeedFetched := s.db.MarkFeedFetched(ctx, feedToFetch.ID)
+	if errMarkFeedFetched != nil {
+		return errMarkFeedFetched
+	}
+
+	for _, feedItem := range feed.Channel.Item {
+		fmt.Printf("%+v\n", feedItem.Title)
+	}
+
+	return nil
 }
