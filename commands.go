@@ -10,8 +10,6 @@ import (
 	"github.com/oleshko-g/gatorcli/internal/database"
 )
 
-const defaultRSSURL = "https://www.wagslane.dev/index.xml"
-
 type command struct {
 	name string
 	args []string
@@ -127,23 +125,24 @@ func getUsersHandler(s *state, cmd command) error {
 }
 
 func aggHandler(s *state, cmd command) error {
-	rssURL := defaultRSSURL
-
 	argumentsNum := len(cmd.args)
-	if argumentsNum == 1 {
-		rssURL = cmd.args[0]
+	if argumentsNum != 1 {
+		return fmt.Errorf("error 'agg' handler expects 1 arguments. Number of arguments %d", argumentsNum)
 	}
 
-	ctx := context.Background()
+	arg := cmd.args[0]
 
-	rss, errFetchFeed := fetchFeed(ctx, rssURL)
-	if errFetchFeed != nil {
-		return errFetchFeed
+	time_between_reqs, errParseDuration := time.ParseDuration(arg)
+	if errParseDuration != nil {
+		return errParseDuration
+	}
+	fmt.Printf("Collecting feeds every %v\n", time_between_reqs)
+
+	ticker := time.NewTicker(time_between_reqs)
+	for ; ; <-ticker.C {
+		scrapeFeeds(s)
 	}
 
-	fmt.Printf("%#v", *rss)
-
-	return nil
 }
 
 func addfeedHandler(s *state, cmd command, u database.User) error {

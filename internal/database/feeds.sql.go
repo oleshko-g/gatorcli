@@ -274,7 +274,7 @@ func (q *Queries) GetFeedsUsers(ctx context.Context) ([]GetFeedsUsersRow, error)
 const getNextFeedToFetch = `-- name: GetNextFeedToFetch :one
 SELECT id, created_at, updated_at, name, url, user_id, last_fetch_at
 FROM feeds
-ORDER BY last_fetch_at DESC NULLS FIRST, updated_at
+ORDER BY last_fetch_at NULLS FIRST, last_fetch_at
 LIMIT 1
 `
 
