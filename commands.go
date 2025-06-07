@@ -299,6 +299,38 @@ func followingHandler(s *state, cmd command, u database.User) error {
 	return nil
 }
 
+func browseHandler(s *state, cmd command, u database.User) error {
+	//argumentsNum := len(cmd.args)
+	// if argumentsNum <= 1 {
+	// 	return fmt.Errorf("error 'browse' handler expects 0 or 1 argument(s). Number of arguments %d", argumentsNum)
+	// }
+
+	limit := 2
+	// if argumentsNum == 1 {
+	// 	limit, err := strconv.Atoi(cmd.args[0])
+	// 	if err != nil {
+	// 		return err
+	// 	}
+	// }
+
+	ctx := context.Background()
+
+	posts, errGetPostsForUser := s.db.GetPostsForUser(ctx,
+		database.GetPostsForUserParams{
+			UserID: u.ID,
+			Limit:  int32(limit),
+		})
+
+	if errGetPostsForUser != nil {
+		return errGetPostsForUser
+	}
+	for _, feed := range posts {
+		fmt.Printf("Post", feed.Description)
+	}
+
+	return nil
+}
+
 type commands struct {
 	commandHandlers map[string]commandHandler
 }
@@ -316,6 +348,7 @@ func NewCommands() commands {
 	cmds.register("follow", middleWareLoggedIn(followHandler))
 	cmds.register("unfollow", middleWareLoggedIn(unfollowHandler))
 	cmds.register("following", middleWareLoggedIn(followingHandler))
+	cmds.register("browse", middleWareLoggedIn(browseHandler))
 
 	return cmds
 }
