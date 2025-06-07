@@ -6,6 +6,11 @@ import (
 	"fmt"
 	"html"
 	"net/http"
+	"time"
+
+	"github.com/araddon/dateparse"
+	"github.com/google/uuid"
+	"github.com/oleshko-g/gatorcli/internal/database"
 )
 
 type RSSFeed struct {
@@ -59,6 +64,33 @@ func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 	feed.unescape()
 
 	return &feed, nil
+}
+
+func convertRSSItemsToPosts(feed_id uuid.UUID, items []RSSItem) ([]database.Post, error) {
+	if len(items) == 0 {
+		return nil, nil
+	}
+
+	var posts = make([]database.Post, len(items))
+
+	for _, v := range items {
+		publishedAt, err := dateparse.ParseAny(v.PubDate)
+		if err != nil {
+			return nil, err
+		}
+
+		posts = append(posts, database.Post{
+			ID:          uuid.New(),
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+			Title:       v.Title,
+			Url:         v.Link,
+			Description: v.Description,
+			PublishedAt: publishedAt,
+			FeedID:      feed_id,
+		})
+	}
+	return posts, nil
 }
 
 func scrapeFeeds(s *state) error {
