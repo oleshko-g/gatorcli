@@ -7,9 +7,9 @@ package database
 
 import (
 	"context"
+	"time"
 
 	"github.com/google/uuid"
-	"github.com/lib/pq"
 )
 
 const getPostsForUser = `-- name: GetPostsForUser :many
@@ -63,44 +63,65 @@ func (q *Queries) GetPostsForUser(ctx context.Context, arg GetPostsForUserParams
 	return items, nil
 }
 
-const upsertPosts = `-- name: UpsertPosts :many
+const insertPost = `-- name: InsertPost :one
 INSERT INTO
-    posts
-SELECT p.p
-FROM UNNEST($1::public.posts[]) AS p
+    posts (
+        id,
+        created_at,
+        updated_at,
+        title,
+        url,
+        description,
+        published_at,
+        feed_id
+    )
+VALUES (
+        $1,
+        $2,
+        $3,
+        $4,
+        $5,
+        $6,
+        $7,
+        $8
+    )
 ON CONFLICT (url) DO NOTHING
 RETURNING
     id, created_at, updated_at, title, url, description, published_at, feed_id
 `
 
-func (q *Queries) UpsertPosts(ctx context.Context, dollar_1 []interface{}) ([]Post, error) {
-	rows, err := q.db.QueryContext(ctx, upsertPosts, pq.Array(dollar_1))
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-	var items []Post
-	for rows.Next() {
-		var i Post
-		if err := rows.Scan(
-			&i.ID,
-			&i.CreatedAt,
-			&i.UpdatedAt,
-			&i.Title,
-			&i.Url,
-			&i.Description,
-			&i.PublishedAt,
-			&i.FeedID,
-		); err != nil {
-			return nil, err
-		}
-		items = append(items, i)
-	}
-	if err := rows.Close(); err != nil {
-		return nil, err
-	}
-	if err := rows.Err(); err != nil {
-		return nil, err
-	}
-	return items, nil
+type InsertPostParams struct {
+	ID          uuid.UUID
+	CreatedAt   time.Time
+	UpdatedAt   time.Time
+	Title       string
+	Url         string
+	Description string
+	PublishedAt time.Time
+	FeedID      uuid.UUID
+}
+
+func (q *Queries) InsertPost(ctx context.Context, arg InsertPostParams) (Post, error) {
+	row := q.db.QueryRowContext(ctx, insertPost,
+		arg.ID,
+		arg.CreatedAt,
+		arg.UpdatedAt,
+		arg.Title,
+		arg.Url,
+		arg.Description,
+		arg.PublishedAt,
+		arg.FeedID,
+	)
+	var i Post
+	err := row.Scan(
+		&i.ID,
+		&i.CreatedAt,
+		&i.UpdatedAt,
+		&i.Title,
+		&i.Url,
+		&i.Description,
+		&i.PublishedAt,
+		&i.FeedID,
+	)
+	return i, err
 }

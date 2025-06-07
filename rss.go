@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"html"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/araddon/dateparse"
@@ -66,33 +67,6 @@ func fetchFeed(ctx context.Context, feedURL string) (*RSSFeed, error) {
 	return &feed, nil
 }
 
-func convertRSSItemsToPosts(feed_id uuid.UUID, items []RSSItem) ([]database.Post, error) {
-	if len(items) == 0 {
-		return nil, nil
-	}
-
-	var posts = make([]database.Post, len(items))
-
-	for _, v := range items {
-		publishedAt, err := dateparse.ParseAny(v.PubDate)
-		if err != nil {
-			return nil, err
-		}
-
-		posts = append(posts, database.Post{
-			ID:          uuid.New(),
-			CreatedAt:   time.Now(),
-			UpdatedAt:   time.Now(),
-			Title:       v.Title,
-			Url:         v.Link,
-			Description: v.Description,
-			PublishedAt: publishedAt,
-			FeedID:      feed_id,
-		})
-	}
-	return posts, nil
-}
-
 func scrapeFeeds(s *state) error {
 	ctx := context.Background()
 	feedToFetch, errGetNextFeedToFeth := s.db.GetNextFeedToFetch(ctx)
@@ -110,8 +84,28 @@ func scrapeFeeds(s *state) error {
 		return errMarkFeedFetched
 	}
 
-	for _, feedItem := range feed.Channel.Item {
-		fmt.Printf("%+v\n", feedItem.Title)
+	for _, v := range feed.Channel.Item {
+		publishedAt, err := dateparse.ParseAny(v.PubDate)
+		if err != nil {
+			fmt.Fprintln(os.Stderr, err)
+			continue
+		}
+
+		insertedPost, errInsertPost := s.db.InsertPost(ctx, database.InsertPostParams{
+			ID:          uuid.New(),
+			CreatedAt:   time.Now(),
+			UpdatedAt:   time.Now(),
+			Title:       v.Title,
+			Url:         v.Link,
+			Description: v.Description,
+			PublishedAt: publishedAt,
+			FeedID:      feedToFetch.ID,
+		})
+
+		if errInsertPost != nil {
+			continue
+		}
+		fmt.Printf("Inserted: %+v\n", insertedPost)
 	}
 
 	return nil
